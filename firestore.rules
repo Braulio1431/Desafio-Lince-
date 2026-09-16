@@ -1,0 +1,32 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function autenticado() { return request.auth != null; }
+    function admin() { return autenticado() && request.auth.token.rol == 'admin'; }
+    function maestro() { return autenticado() && request.auth.token.rol == 'maestro'; }
+    function personal() { return admin() || maestro(); }
+
+    match /usuarios/{uid} {
+      allow read: if admin();
+      allow write: if false; // Las cuentas y sus claims se crean desde el servidor.
+    }
+    match /equipos/{id} {
+      allow read: if personal();
+      allow create, update, delete: if admin();
+    }
+    match /entregas/{id} {
+      allow read: if personal();
+      allow create, delete: if admin();
+      allow update: if admin() || (maestro() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado']));
+    }
+    match /calificaciones/{id} {
+      allow read: if personal();
+      allow create: if maestro() && request.resource.data.maestroId == request.auth.uid;
+      allow update, delete: if admin();
+    }
+    match /configuracion/{documento} {
+      allow read: if personal();
+      allow write: if admin();
+    }
+  }
+}

@@ -13,6 +13,22 @@ export interface Integrante {
   matricula: string;
 }
 
+export interface DatosRegistroEquipo {
+  nombreCompleto: string;
+  numeroTelefonico: string;
+  email: string;
+  edad: string;
+  genero: string;
+  nivelEstudios: string;
+  campusUvmCercano: string;
+  matriculaLider: string;
+  carreraLider: string;
+  numeroIntegrantes: number;
+  nombreProyecto: string;
+  clasificacionProyecto: string;
+  cuentaCon: string;
+}
+
 export interface Representante {
   nombre: string;
   telefono: string;
@@ -21,11 +37,32 @@ export interface Representante {
 
 export interface Equipo {
   id: string;
+  codigoProyecto?: string;
   nombreEquipo: string;
   integrantes: Integrante[];
   representante: Representante;
   fechaAlta: string;
+  registro?: DatosRegistroEquipo;
+  documentos?: DocumentoEquipo[];
 }
+
+export const DOCUMENTOS_EQUIPO = [
+  { clave: "documento1", nombre: "Documento 1" },
+  { clave: "documento2", nombre: "Documento 2" },
+  { clave: "documento3", nombre: "Documento 3" },
+] as const;
+
+export type ClaveDocumento = (typeof DOCUMENTOS_EQUIPO)[number]["clave"];
+
+export interface DocumentoEquipo {
+  clave: ClaveDocumento;
+  nombre: string;
+  link: string;
+  fechaActualizacion?: string;
+  actualizadoPor?: string;
+}
+
+export type RubricasPorDocumento = Record<ClaveDocumento, Omit<CriterioRubrica, "puntosObtenidos">[]>;
 
 export type TipoEntrega = "video" | "pdf" | "doc" | "excel" | "csv" | "link";
 export type EstadoEntrega = "pendiente" | "calificado";
@@ -59,12 +96,24 @@ export interface Calificacion {
   puntajeMaximo: number;
   comentarios: string;
   fechaCalificacion: string;
+  documentoClave?: ClaveDocumento;
+  nombreDocumento?: string;
+  nombreMaestro?: string;
+  correoMaestro?: string;
+  nombreEquipo?: string;
+  codigoProyecto?: string;
+  nombreProyecto?: string;
 }
 
 // Rúbrica genérica temporal (3 criterios, 1-10 c/u)
 // Reemplazar cuando llegue el formulario real
 export const RUBRICA_GENERICA: Omit<CriterioRubrica, "puntosObtenidos">[] = [
-  { criterio: "Criterio 1", puntosMax: 10 },
-  { criterio: "Criterio 2", puntosMax: 10 },
-  { criterio: "Criterio 3", puntosMax: 10 },
+  { criterio: "Problema y oportunidad", puntosMax: 10 },
+  { criterio: "Propuesta de valor", puntosMax: 10 },
+  { criterio: "Innovación", puntosMax: 10 },
+  { criterio: "Mercado objetivo", puntosMax: 10 },
+  { criterio: "Modelo de negocio", puntosMax: 10 },
+  { criterio: "Viabilidad y operación", puntosMax: 10 },
+  { criterio: "Impacto y escalabilidad", puntosMax: 10 },
+  { criterio: "Claridad y presentación", puntosMax: 10 },
 ];

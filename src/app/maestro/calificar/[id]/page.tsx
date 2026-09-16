@@ -1,0 +1,20 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { actualizarEntrega } from "@/lib/entregas";
+import { guardarCalificacion } from "@/lib/calificaciones";
+import { CriterioRubrica, Entrega, RUBRICA_GENERICA } from "@/types";
+
+export default function CalificarPage() {
+  const params = useParams<{ id: string }>(); const router = useRouter();
+  const [entrega, setEntrega] = useState<Entrega | null>(null);
+  const [rubrica, setRubrica] = useState<CriterioRubrica[]>(RUBRICA_GENERICA.map((c) => ({ ...c, puntosObtenidos: 0 })));
+  const [comentarios, setComentarios] = useState(""); const [guardando, setGuardando] = useState(false);
+  useEffect(() => { getDoc(doc(db, "entregas", params.id)).then((s) => s.exists() && setEntrega({ id: s.id, ...s.data() } as Entrega)); }, [params.id]);
+  if (!entrega) return <div className="p-6 text-gray-500">Cargando entrega...</div>;
+  async function guardar() { setGuardando(true); await guardarCalificacion({ entregaId: entrega!.id, equipoId: entrega!.equipoId, documentoClave: "documento1", nombreDocumento: entrega!.nombreArchivo, nombreEquipo: entrega!.nombreEquipo, rubrica, comentarios }); await actualizarEntrega(entrega!.id, { estado: "calificado" }); router.push("/maestro/dashboard"); }
+  return <div className="p-6 max-w-3xl mx-auto space-y-6"><div><h1 className="text-2xl font-bold">Evaluar entrega</h1><p className="text-gray-500">{entrega.nombreEquipo} · {entrega.nombreArchivo}</p></div><div className="bg-white border rounded-xl divide-y">{rubrica.map((criterio, i) => <div key={criterio.criterio} className="p-4 flex items-center justify-between gap-4"><div><p className="font-medium">{i + 1}. {criterio.criterio}</p><p className="text-xs text-gray-500">Máximo {criterio.puntosMax} puntos</p></div><input type="number" min="0" max={criterio.puntosMax} value={criterio.puntosObtenidos} onChange={(e) => setRubrica((r) => r.map((c, n) => n === i ? { ...c, puntosObtenidos: Math.min(criterio.puntosMax, Math.max(0, Number(e.target.value))) } : c))} className="w-20 border px-3 py-2" /></div>)}</div><textarea value={comentarios} onChange={(e) => setComentarios(e.target.value)} placeholder="Comentarios para el equipo" className="w-full min-h-28 border px-3 py-2" /><div className="flex justify-end gap-2"><button onClick={() => router.back()} className="border px-4 py-2">Cancelar</button><button onClick={guardar} disabled={guardando} className="bg-[#D7282F] text-white px-4 py-2 disabled:opacity-50">{guardando ? "Guardando..." : "Guardar evaluación"}</button></div></div>;
+}

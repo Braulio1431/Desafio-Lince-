@@ -3,120 +3,15 @@
 import { useState } from "react";
 import { parsearExcelEquipos, importarEquiposMasivo } from "@/lib/importarEquipos";
 import { Equipo } from "@/types";
-import { FileSpreadsheet } from "lucide-react";
+import { CheckCircle2, FileSpreadsheet, UploadCloud, X, Download } from "lucide-react";
+import * as XLSX from "xlsx";
+
+const ENCABEZADOS = ["NOMBRE COMPLETO", "NÚMERO TELEFÓNICO", "E-MAIL", "EDAD", "GÉNERO", "NIVEL DE ESTUDIOS", "CAMPUS UVM CERCANO", "MATRÍCULA DEL LÍDER DEL EQUIPO", "CARRERA (DEL LÍDER DE EQUIPO)", "NÚMERO DE INTEGRANTES DEL EQUIPO (INCLUIDO EL LÍDER)", "NOMBRE DEL PROYECTO QUE REGISTRAS", "CLASIFICACIÓN DEL PROYECTO DE EMPRENDIMIENTO QUE REGISTRAS", "EL PROYECTO A PARTICIPAR CUENTA CON"];
+function descargarPlantilla() { const hoja = XLSX.utils.aoa_to_sheet([ENCABEZADOS, ["Nombre completo", "5550000000", "correo@ejemplo.com", "De 19 a 25", "Femenino", "Universidad", "PUEBLA", "MATRICULA-001", "Ingeniería", 3, "Nombre del proyecto", "Tecnología", "Plan de negocios"]]); const libro = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(libro, hoja, "Equipos"); XLSX.writeFile(libro, "plantilla-equipos-desafio-lince.xlsx"); }
 
 export function ModalImportarEquipos({ onClose }: { onClose: () => void }) {
-  const [preview, setPreview] = useState<Omit<Equipo, "id">[]>([]);
-  const [error, setError] = useState("");
-  const [importando, setImportando] = useState(false);
-  const [hecho, setHecho] = useState(false);
-
-  async function handleArchivo(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setError("");
-    try {
-      const equipos = await parsearExcelEquipos(file);
-      if (equipos.length === 0) {
-        setError("No se encontraron equipos válidos en el archivo.");
-        return;
-      }
-      setPreview(equipos);
-    } catch {
-      setError("No se pudo leer el archivo. Verifica que sea un .xlsx o .csv válido.");
-    }
-  }
-
-  async function handleConfirmar() {
-    setImportando(true);
-    await importarEquiposMasivo(preview);
-    setImportando(false);
-    setHecho(true);
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-none p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto space-y-4 border border-gray-200">
-        <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-          <FileSpreadsheet size={20} className="text-[#D7282F]" />
-          Importar equipos desde Excel
-        </h2>
-
-        {hecho ? (
-          <div className="text-center py-8 space-y-4">
-            <p className="text-green-700 font-medium">
-              {preview.length} equipos importados correctamente.
-            </p>
-            <button
-              onClick={onClose}
-              className="px-4 py-2 rounded-none bg-[#D7282F] text-white hover:bg-[#B91F26]"
-            >
-              Cerrar
-            </button>
-          </div>
-        ) : (
-          <>
-            <p className="text-sm text-gray-500">
-              Columnas esperadas: nombreEquipo, nombreIntegrante, apellidoIntegrante,
-              matricula, esRepresentante (si/no), telefonoRepresentante, correoRepresentante.
-              Una fila por integrante.
-            </p>
-
-            <input
-              type="file"
-              accept=".xlsx,.xls,.csv"
-              onChange={handleArchivo}
-              className="block w-full text-sm text-gray-700"
-            />
-
-            {error && (
-              <p className="text-red-700 text-sm bg-red-50 border border-red-200 p-2 rounded-none">
-                {error}
-              </p>
-            )}
-
-            {preview.length > 0 && (
-              <div className="border border-gray-200 rounded-none overflow-hidden max-h-64 overflow-y-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-100 text-left sticky top-0">
-                    <tr>
-                      <th className="p-2 text-gray-700">Equipo</th>
-                      <th className="p-2 text-gray-700">Integrantes</th>
-                      <th className="p-2 text-gray-700">Representante</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {preview.map((equipo, i) => (
-                      <tr key={i} className="border-t border-gray-200">
-                        <td className="p-2 font-medium text-gray-900">{equipo.nombreEquipo}</td>
-                        <td className="p-2 text-gray-600">
-                          {equipo.integrantes.length} integrante(s)
-                        </td>
-                        <td className="p-2 text-gray-600">
-                          {equipo.representante.nombre || "— sin marcar —"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            <div className="flex justify-end gap-2 pt-2">
-              <button onClick={onClose} className="px-4 py-2 rounded-none border border-gray-300 text-gray-700">
-                Cancelar
-              </button>
-              <button
-                onClick={handleConfirmar}
-                disabled={preview.length === 0 || importando}
-                className="px-4 py-2 rounded-none bg-[#D7282F] text-white hover:bg-[#B91F26] disabled:opacity-50"
-              >
-                {importando ? "Importando..." : `Importar ${preview.length} equipos`}
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
+  const [preview, setPreview] = useState<Omit<Equipo, "id">[]>([]); const [error, setError] = useState(""); const [importando, setImportando] = useState(false); const [hecho, setHecho] = useState(false);
+  async function handleArchivo(evento: React.ChangeEvent<HTMLInputElement>) { const file = evento.target.files?.[0]; if (!file) return; setError(""); setPreview([]); try { const equipos = await parsearExcelEquipos(file); if (!equipos.length) throw new Error("No se encontraron filas válidas."); setPreview(equipos); } catch (err) { setError(err instanceof Error ? err.message : "No se pudo leer el archivo. Usa la plantilla descargable."); } }
+  async function confirmar() { setImportando(true); try { await importarEquiposMasivo(preview); setHecho(true); } catch (err) { setError(err instanceof Error ? err.message : "No se pudo completar la importación."); } finally { setImportando(false); } }
+  return <div className="fixed inset-0 z-50 bg-[#202124]/70 p-3 sm:p-6 flex items-center justify-center"><div className="bg-white w-full max-w-5xl max-h-[94vh] overflow-y-auto shadow-2xl"><div className="sticky top-0 z-10 bg-white border-b px-5 sm:px-7 py-4 flex items-center justify-between"><div className="flex items-center gap-3"><span className="bg-red-50 text-[#c8102e] p-2"><FileSpreadsheet size={22} /></span><div><p className="text-xs uppercase tracking-wider text-[#c8102e] font-bold">Carga masiva</p><h2 className="text-xl font-bold text-[#202124]">Importar proyectos</h2></div></div><button onClick={onClose} className="text-gray-500 hover:text-[#c8102e]"><X /></button></div>{hecho ? <div className="p-12 text-center"><CheckCircle2 className="mx-auto text-green-600" size={48} /><h3 className="text-xl font-bold text-[#202124] mt-4">Importación completada</h3><p className="text-gray-500 mt-2">{preview.length} proyectos fueron registrados con ID único.</p><button onClick={onClose} className="mt-6 bg-[#c8102e] text-white px-5 py-2.5 font-semibold">Cerrar</button></div> : <div className="p-5 sm:p-7 space-y-5"><div className="bg-gray-50 border border-gray-200 p-4"><h3 className="font-bold text-[#202124]">Acepta tu tabla actual</h3><p className="text-sm text-gray-600 mt-1">El importador busca automáticamente la fila de encabezados, aunque existan títulos, filas vacías, saltos de línea o celdas combinadas antes de la tabla. Acepta archivos .xlsx, .xls y .csv.</p><button type="button" onClick={descargarPlantilla} className="mt-3 inline-flex items-center gap-2 text-sm text-[#c8102e] font-bold hover:underline"><Download size={16} /> Descargar plantilla de prueba</button></div><label className="border-2 border-dashed border-gray-300 hover:border-[#c8102e] p-8 flex flex-col items-center justify-center text-center cursor-pointer transition"><UploadCloud className="text-[#c8102e]" size={34} /><span className="font-bold text-[#202124] mt-2">Selecciona tu archivo</span><span className="text-xs text-gray-500 mt-1">Excel o CSV · una tabla por archivo</span><input type="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" onChange={handleArchivo} className="hidden" /></label>{error && <div className="bg-red-50 border border-red-200 text-[#a50d26] p-3 text-sm">{error}</div>}{preview.length > 0 && <div className="border border-gray-200"><div className="px-4 py-3 bg-gray-50 flex justify-between"><span className="font-bold text-[#202124]">Vista previa</span><span className="text-sm text-gray-500">{preview.length} proyectos detectados</span></div><div className="overflow-x-auto max-h-72"><table className="w-full min-w-[700px] text-sm"><thead className="bg-white sticky top-0 border-b"><tr><th className="p-3 text-left text-gray-600">ID al importar</th><th className="p-3 text-left text-gray-600">Proyecto</th><th className="p-3 text-left text-gray-600">Campus</th><th className="p-3 text-left text-gray-600">Líder</th><th className="p-3 text-left text-gray-600">Campos</th></tr></thead><tbody>{preview.map((equipo, index) => <tr key={index} className="border-t"><td className="p-3 text-xs text-[#c8102e] font-bold">Se generará</td><td className="p-3 font-semibold text-gray-900">{equipo.registro?.nombreProyecto}</td><td className="p-3 text-gray-700">{equipo.registro?.campusUvmCercano}</td><td className="p-3 text-gray-700">{equipo.registro?.nombreCompleto}</td><td className="p-3 text-green-700">Completo</td></tr>)}</tbody></table></div></div>}<div className="flex flex-col-reverse sm:flex-row justify-end gap-2"><button onClick={onClose} className="px-4 py-2.5 border border-gray-300 text-gray-700">Cancelar</button><button onClick={confirmar} disabled={!preview.length || importando} className="px-5 py-2.5 bg-[#c8102e] text-white font-semibold disabled:opacity-50">{importando ? "Importando..." : `Importar ${preview.length} proyectos`}</button></div></div>}</div></div>;
 }

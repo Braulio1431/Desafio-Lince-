@@ -7,8 +7,7 @@ import { Entrega, TipoEntrega, Usuario } from "@/types";
 import { FiltroTipoArchivo } from "@/components/FiltroTipoArchivo";
 import { BuscadorNombre } from "@/components/BuscadorNombre";
 import { ModalEntrega } from "@/components/ModalEntrega";
-import { ModalImportarArchivos } from "@/components/ModalImportarArchivos";
-import { Upload, Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 
 export default function EntregasAdminPage() {
   const [entregas, setEntregas] = useState<Entrega[]>([]);
@@ -16,7 +15,6 @@ export default function EntregasAdminPage() {
   const [busqueda, setBusqueda] = useState("");
   const [tipo, setTipo] = useState<TipoEntrega | "todos">("todos");
   const [entregaEditando, setEntregaEditando] = useState<Entrega | null>(null);
-  const [modalMigrarAbierto, setModalMigrarAbierto] = useState(false);
 
   useEffect(() => {
     const unsub1 = escucharEntregas(setEntregas);
@@ -54,13 +52,7 @@ export default function EntregasAdminPage() {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Entregas ({entregas.length})</h1>
-        <button
-          onClick={() => setModalMigrarAbierto(true)}
-          className="flex items-center gap-2 bg-[#D7282F] text-white px-4 py-2 rounded-none text-sm font-medium hover:bg-[#B91F26]"
-        >
-          <Upload size={16} />
-          Migrar archivos
-        </button>
+        <p className="text-sm text-gray-500">Los documentos nuevos se registran como enlaces desde la ficha de cada equipo.</p>
       </div>
 
       <div className="flex flex-col md:flex-row gap-4">
@@ -135,9 +127,6 @@ export default function EntregasAdminPage() {
         <ModalEntrega entrega={entregaEditando} onClose={() => setEntregaEditando(null)} />
       )}
 
-      {modalMigrarAbierto && (
-        <ModalImportarArchivos onClose={() => setModalMigrarAbierto(false)} />
-      )}
     </div>
   );
 }

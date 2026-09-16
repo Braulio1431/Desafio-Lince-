@@ -1,164 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { Equipo, Integrante } from "@/types";
-import { crearEquipo, actualizarEquipo } from "@/lib/equipos";
+import { DOCUMENTOS_EQUIPO, DatosRegistroEquipo, Equipo } from "@/types";
+import { actualizarEquipo, crearEquipo } from "@/lib/equipos";
 import { X } from "lucide-react";
 
-const INTEGRANTE_VACIO: Integrante = { nombre: "", apellido: "", matricula: "" };
-const inputClass =
-  "px-3 py-2 border border-gray-300 rounded-none text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#D7282F] focus:border-[#D7282F]";
+const CAMPOS: { key: keyof DatosRegistroEquipo; label: string; type?: string }[] = [
+  { key: "nombreCompleto", label: "Nombre completo" }, { key: "numeroTelefonico", label: "Número telefónico", type: "tel" }, { key: "email", label: "E-mail", type: "email" }, { key: "edad", label: "Edad" }, { key: "genero", label: "Género" }, { key: "nivelEstudios", label: "Nivel de estudios" }, { key: "campusUvmCercano", label: "Campus UVM cercano" }, { key: "matriculaLider", label: "Matrícula del líder del equipo" }, { key: "carreraLider", label: "Carrera del líder de equipo" }, { key: "numeroIntegrantes", label: "Número de integrantes", type: "number" }, { key: "nombreProyecto", label: "Nombre del proyecto" }, { key: "clasificacionProyecto", label: "Clasificación del proyecto" }, { key: "cuentaCon", label: "El proyecto a participar cuenta con" },
+];
+const VACIO: DatosRegistroEquipo = { nombreCompleto: "", numeroTelefonico: "", email: "", edad: "", genero: "", nivelEstudios: "", campusUvmCercano: "", matriculaLider: "", carreraLider: "", numeroIntegrantes: 1, nombreProyecto: "", clasificacionProyecto: "", cuentaCon: "" };
+const input = "w-full px-3 py-2.5 border border-gray-300 text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c8102e] focus:border-[#c8102e]";
 
-export function ModalEquipo({
-  equipo,
-  onClose,
-}: {
-  equipo: Equipo | null;
-  onClose: () => void;
-}) {
-  const [nombreEquipo, setNombreEquipo] = useState(equipo?.nombreEquipo ?? "");
-  const [integrantes, setIntegrantes] = useState<Integrante[]>(
-    equipo?.integrantes?.length ? equipo.integrantes : [{ ...INTEGRANTE_VACIO }]
-  );
-  const [repNombre, setRepNombre] = useState(equipo?.representante?.nombre ?? "");
-  const [repTelefono, setRepTelefono] = useState(equipo?.representante?.telefono ?? "");
-  const [repCorreo, setRepCorreo] = useState(equipo?.representante?.correo ?? "");
-  const [guardando, setGuardando] = useState(false);
-
-  function actualizarIntegrante(i: number, campo: keyof Integrante, valor: string) {
-    setIntegrantes((prev) =>
-      prev.map((int, idx) => (idx === i ? { ...int, [campo]: valor } : int))
-    );
-  }
-
-  function agregarIntegrante() {
-    setIntegrantes((prev) => [...prev, { ...INTEGRANTE_VACIO }]);
-  }
-
-  function quitarIntegrante(i: number) {
-    setIntegrantes((prev) => prev.filter((_, idx) => idx !== i));
-  }
-
-  async function handleGuardar() {
-    setGuardando(true);
-    const data = {
-      nombreEquipo,
-      integrantes,
-      representante: { nombre: repNombre, telefono: repTelefono, correo: repCorreo },
-      fechaAlta: equipo?.fechaAlta ?? new Date().toISOString(),
-    };
-
-    if (equipo) {
-      await actualizarEquipo(equipo.id, data);
-    } else {
-      await crearEquipo(data);
-    }
-    setGuardando(false);
-    onClose();
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-none p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto space-y-4 border border-gray-200">
-        <h2 className="text-xl font-bold text-gray-900">
-          {equipo ? "Editar equipo" : "Nuevo equipo"}
-        </h2>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Nombre del equipo
-          </label>
-          <input
-            value={nombreEquipo}
-            onChange={(e) => setNombreEquipo(e.target.value)}
-            className={`w-full ${inputClass}`}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Integrantes</label>
-          <div className="space-y-2">
-            {integrantes.map((int, i) => (
-              <div key={i} className="flex gap-2">
-                <input
-                  placeholder="Nombre"
-                  value={int.nombre}
-                  onChange={(e) => actualizarIntegrante(i, "nombre", e.target.value)}
-                  className={`flex-1 text-sm ${inputClass}`}
-                />
-                <input
-                  placeholder="Apellido"
-                  value={int.apellido}
-                  onChange={(e) => actualizarIntegrante(i, "apellido", e.target.value)}
-                  className={`flex-1 text-sm ${inputClass}`}
-                />
-                <input
-                  placeholder="Matrícula"
-                  value={int.matricula}
-                  onChange={(e) => actualizarIntegrante(i, "matricula", e.target.value)}
-                  className={`flex-1 text-sm ${inputClass}`}
-                />
-                <button
-                  onClick={() => quitarIntegrante(i)}
-                  className="text-gray-400 hover:text-red-600 px-2"
-                  type="button"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            ))}
-          </div>
-          <button
-            onClick={agregarIntegrante}
-            type="button"
-            className="text-sm text-[#D7282F] font-medium mt-2"
-          >
-            + Agregar integrante
-          </button>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Representante</label>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-            <input
-              placeholder="Nombre"
-              value={repNombre}
-              onChange={(e) => setRepNombre(e.target.value)}
-              className={`text-sm ${inputClass}`}
-            />
-            <input
-              placeholder="Teléfono"
-              value={repTelefono}
-              onChange={(e) => setRepTelefono(e.target.value)}
-              className={`text-sm ${inputClass}`}
-            />
-            <input
-              placeholder="Correo"
-              value={repCorreo}
-              onChange={(e) => setRepCorreo(e.target.value)}
-              className={`text-sm ${inputClass}`}
-            />
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-2 pt-2">
-          <button
-            onClick={onClose}
-            type="button"
-            className="px-4 py-2 rounded-none border border-gray-300 text-gray-700"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={handleGuardar}
-            disabled={guardando || !nombreEquipo}
-            type="button"
-            className="px-4 py-2 rounded-none bg-[#D7282F] text-white hover:bg-[#B91F26] disabled:opacity-50"
-          >
-            {guardando ? "Guardando..." : "Guardar"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+export function ModalEquipo({ equipo, onClose }: { equipo: Equipo | null; onClose: () => void }) {
+  const [registro, setRegistro] = useState<DatosRegistroEquipo>(equipo?.registro ?? { ...VACIO, nombreCompleto: equipo?.representante?.nombre ?? "", numeroTelefonico: equipo?.representante?.telefono ?? "", email: equipo?.representante?.correo ?? "", nombreProyecto: equipo?.nombreEquipo ?? "", numeroIntegrantes: equipo?.integrantes?.length || 1 });
+  const [documentos, setDocumentos] = useState(equipo?.documentos ?? []); const [guardando, setGuardando] = useState(false); const [error, setError] = useState("");
+  function cambiar(campo: keyof DatosRegistroEquipo, valor: string) { setRegistro((actual) => ({ ...actual, [campo]: campo === "numeroIntegrantes" ? Number(valor) || 0 : valor })); }
+  async function guardar() { setError(""); if (Object.values(registro).some((v) => v === "" || v === 0)) { setError("Completa todos los campos del registro."); return; } setGuardando(true); try { const data = { nombreEquipo: registro.nombreProyecto, integrantes: [{ nombre: registro.nombreCompleto, apellido: "", matricula: registro.matriculaLider }], representante: { nombre: registro.nombreCompleto, telefono: registro.numeroTelefonico, correo: registro.email }, registro, documentos, fechaAlta: equipo?.fechaAlta ?? new Date().toISOString(), ...(equipo?.codigoProyecto ? { codigoProyecto: equipo.codigoProyecto } : {}) }; if (equipo) await actualizarEquipo(equipo.id, data); else await crearEquipo(data); onClose(); } catch (e) { setError(e instanceof Error ? e.message : "No se pudo guardar el proyecto."); } finally { setGuardando(false); } }
+  return <div className="fixed inset-0 z-50 bg-black/60 p-3 sm:p-6 flex items-center justify-center"><div className="bg-white w-full max-w-4xl max-h-[94vh] overflow-y-auto"><div className="sticky top-0 z-10 bg-white border-b px-5 sm:px-7 py-4 flex items-center justify-between"><div><p className="text-xs text-[#c8102e] font-bold uppercase tracking-wider">Registro de proyecto</p><h2 className="text-xl font-bold text-[#202124]">{equipo ? "Editar proyecto" : "Nuevo proyecto"}</h2></div><button onClick={onClose} className="text-gray-500 hover:text-[#c8102e]"><X /></button></div><div className="p-5 sm:p-7 space-y-6"><div><p className="text-sm text-gray-500 mb-4">Estos campos son exactamente los mismos que contiene la plantilla de importación.</p><div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{CAMPOS.map(({ key, label, type }) => <label key={key} className="text-sm font-semibold text-gray-700">{label}<input required type={type ?? "text"} value={String(registro[key])} onChange={(e) => cambiar(key, e.target.value)} className={`${input} mt-1`} /></label>)}</div></div><div className="border-t pt-5"><h3 className="font-bold text-[#202124]">Documentos del proyecto</h3><p className="text-xs text-gray-500 mt-1 mb-3">Pega un enlace por documento. Se mantienen separados del formulario de registro.</p><div className="space-y-3">{DOCUMENTOS_EQUIPO.map(({ clave, nombre }) => { const actual = documentos.find((d) => d.clave === clave); return <div key={clave} className="grid grid-cols-1 sm:grid-cols-[150px_1fr] gap-2 items-center"><span className="text-sm font-semibold text-gray-700">{nombre}</span><input type="url" placeholder="https://drive.google.com/..." value={actual?.link ?? ""} onChange={(e) => setDocumentos((prev) => [...prev.filter((d) => d.clave !== clave), { clave, nombre, link: e.target.value, fechaActualizacion: new Date().toISOString() }])} className={input} /></div>; })}</div></div>{error && <p className="bg-red-50 border border-red-200 text-[#c8102e] px-3 py-2 text-sm">{error}</p>}<div className="flex flex-col-reverse sm:flex-row justify-end gap-2"><button onClick={onClose} className="px-4 py-2.5 border border-gray-300 text-gray-700">Cancelar</button><button onClick={guardar} disabled={guardando} className="px-4 py-2.5 bg-[#c8102e] text-white font-semibold disabled:opacity-50">{guardando ? "Guardando..." : "Guardar proyecto"}</button></div></div></div></div>;
 }

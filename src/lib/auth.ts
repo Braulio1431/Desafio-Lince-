@@ -16,8 +16,9 @@ export async function cerrarSesion() {
 }
 
 export async function obtenerRol(user: User): Promise<Rol | null> {
-   const tokenResult = await user.getIdTokenResult(true);
-  return (tokenResult.claims.rol as Rol) ?? null;
+  const tokenResult = await user.getIdTokenResult(true);
+  const claim = tokenResult.claims.rol ?? tokenResult.claims.role;
+  return claim === "admin" || claim === "maestro" ? claim : null;
 }
 
 export function escucharSesion(
