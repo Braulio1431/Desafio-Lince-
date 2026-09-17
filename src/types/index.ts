@@ -103,6 +103,7 @@ export interface Calificacion {
   nombreEquipo?: string;
   codigoProyecto?: string;
   nombreProyecto?: string;
+ recomendadoFinal?: boolean;
 }
 
 // Rúbrica genérica temporal (3 criterios, 1-10 c/u)

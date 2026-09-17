@@ -4,14 +4,177 @@ import { useEffect, useMemo, useState } from "react";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Calificacion, Equipo } from "@/types";
-import { Award, Medal, Trophy } from "lucide-react";
+import { Award, Medal, Trophy, ThumbsUp } from "lucide-react";
 
 type Resultado = Calificacion & { id: string };
-type Podio = { proyecto: string; codigo?: string; evaluaciones: Resultado[]; promedio: number; documentos: number; maestros: string[] };
+type Podio = {
+  proyecto: string;
+  codigo?: string;
+  evaluaciones: Resultado[];
+  promedioBase: number;
+  promedioFinal: number;
+  recomendaciones: number;
+  documentos: number;
+  maestros: string[];
+};
+
+const BONO_POR_RECOMENDACION = 0.05; // 5% extra por cada recomendación de "llegar a la final"
 
 export default function PodioAdminPage() {
-  const [calificaciones, setCalificaciones] = useState<Resultado[]>([]); const [equipos, setEquipos] = useState<Equipo[]>([]);
-  useEffect(() => { const uno = onSnapshot(collection(db, "calificaciones"), (snap) => setCalificaciones(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Resultado)))); const dos = onSnapshot(collection(db, "equipos"), (snap) => setEquipos(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Equipo)))); return () => { uno(); dos(); }; }, []);
-  const podio = useMemo<Podio[]>(() => { const mapa = new Map<string, Resultado[]>(); calificaciones.forEach((c) => { const lista = mapa.get(c.equipoId) ?? []; lista.push(c); mapa.set(c.equipoId, lista); }); return Array.from(mapa.entries()).map(([equipoId, evaluaciones]) => { const equipo = equipos.find((e) => e.id === equipoId); const promedio = evaluaciones.reduce((total, e) => total + (e.puntajeMaximo ? (e.puntajeTotal / e.puntajeMaximo) * 100 : 0), 0) / evaluaciones.length; return { proyecto: equipo?.registro?.nombreProyecto || evaluaciones[0].nombreProyecto || equipo?.nombreEquipo || "Proyecto sin nombre", codigo: equipo?.codigoProyecto || evaluaciones[0].codigoProyecto, evaluaciones, promedio, documentos: new Set(evaluaciones.map((e) => e.documentoClave || e.nombreDocumento)).size, maestros: Array.from(new Set(evaluaciones.map((e) => e.nombreMaestro || e.correoMaestro || e.maestroId))) }; }).sort((a, b) => b.promedio - a.promedio); }, [calificaciones, equipos]);
-  return <main className="p-4 sm:p-6 md:p-8 max-w-[1500px] mx-auto space-y-6"><div><p className="text-sm text-[#c8102e] font-bold uppercase tracking-wider">Resultados del concurso</p><h1 className="text-3xl font-bold text-[#202124] mt-1">Podio de evaluaciones</h1><p className="text-gray-500 mt-1">Promedio de las evaluaciones registradas para los tres documentos de cada proyecto.</p></div><div className="grid grid-cols-1 md:grid-cols-3 gap-4">{podio.slice(0, 3).map((item, index) => <div key={item.codigo || item.proyecto} className={`bg-white border p-5 ${index === 0 ? "border-[#c8102e] shadow-md" : "border-gray-200"}`}><div className="flex items-center justify-between"><span className="text-sm font-bold text-gray-500">Lugar {index + 1}</span>{index === 0 ? <Trophy className="text-[#c8102e]" /> : <Medal className="text-gray-400" />}</div><p className="text-xs text-[#c8102e] font-bold mt-4">{item.codigo || "Sin ID"}</p><h2 className="font-bold text-lg text-[#202124] mt-1">{item.proyecto}</h2><p className="text-4xl font-black text-[#c8102e] mt-3">{item.promedio.toFixed(2)}<span className="text-base">%</span></p><p className="text-xs text-gray-500 mt-2">{item.evaluaciones.length} evaluaciones · {item.documentos}/3 documentos</p></div>)}</div><section className="bg-white border border-gray-200 overflow-hidden"><div className="p-4 border-b flex items-center gap-2"><Award className="text-[#c8102e]" size={20} /><div><h2 className="font-bold text-[#202124]">Detalle por proyecto y evaluador</h2><p className="text-xs text-gray-500">Consulta quién calificó cada documento y con qué puntuación.</p></div></div><div className="overflow-x-auto"><table className="w-full min-w-[1050px] text-sm"><thead className="bg-[#202124] text-white text-left"><tr><th className="p-3">Pos.</th><th className="p-3">Proyecto</th><th className="p-3">Promedio</th><th className="p-3">Documentos</th><th className="p-3">Evaluaciones</th><th className="p-3">Detalle de calificadores</th></tr></thead><tbody>{podio.map((item, index) => <tr key={item.codigo || item.proyecto} className="border-t align-top"><td className="p-3 font-bold">{index + 1}</td><td className="p-3"><span className="text-xs text-[#c8102e] font-bold">{item.codigo}</span><br /><span className="font-semibold text-gray-900">{item.proyecto}</span></td><td className="p-3 font-bold text-[#c8102e]">{item.promedio.toFixed(2)}%</td><td className="p-3 text-gray-700">{item.documentos} / 3</td><td className="p-3 text-gray-700">{item.evaluaciones.length}</td><td className="p-3"><div className="space-y-2">{item.evaluaciones.map((evaluacion) => <details key={evaluacion.id} className="border border-gray-200 p-2"><summary className="cursor-pointer text-gray-800"><b>{evaluacion.nombreDocumento || evaluacion.documentoClave || "Documento"}</b> · {evaluacion.puntajeTotal}/{evaluacion.puntajeMaximo} · {evaluacion.nombreMaestro || evaluacion.correoMaestro}</summary><div className="mt-2 text-xs text-gray-600 space-y-1"><p>Evaluó: {evaluacion.nombreMaestro || "Maestro"} ({evaluacion.correoMaestro || "sin correo"})</p><p>Fecha: {new Date(evaluacion.fechaCalificacion).toLocaleString("es-MX")}</p>{evaluacion.rubrica?.map((criterio) => <p key={criterio.criterio} className="flex justify-between border-t pt-1"><span>{criterio.criterio}</span><b>{criterio.puntosObtenidos}/{criterio.puntosMax}</b></p>)}{evaluacion.comentarios && <p className="italic mt-2">“{evaluacion.comentarios}”</p>}</div></details>)}</div></td></tr>)}{podio.length === 0 && <tr><td colSpan={6} className="p-12 text-center text-gray-500">Aún no hay evaluaciones registradas.</td></tr>}</tbody></table></div></section></main>;
+  const [calificaciones, setCalificaciones] = useState<Resultado[]>([]);
+  const [equipos, setEquipos] = useState<Equipo[]>([]);
+
+  useEffect(() => {
+    const uno = onSnapshot(collection(db, "calificaciones"), (snap) =>
+      setCalificaciones(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Resultado)))
+    );
+    const dos = onSnapshot(collection(db, "equipos"), (snap) =>
+      setEquipos(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Equipo)))
+    );
+    return () => { uno(); dos(); };
+  }, []);
+
+  const podio = useMemo<Podio[]>(() => {
+    const mapa = new Map<string, Resultado[]>();
+    calificaciones.forEach((c) => {
+      const lista = mapa.get(c.equipoId) ?? [];
+      lista.push(c);
+      mapa.set(c.equipoId, lista);
+    });
+
+    return Array.from(mapa.entries())
+      .map(([equipoId, evaluaciones]) => {
+        const equipo = equipos.find((e) => e.id === equipoId);
+        const promedioBase =
+          evaluaciones.reduce((total, e) => total + (e.puntajeMaximo ? (e.puntajeTotal / e.puntajeMaximo) * 100 : 0), 0) /
+          evaluaciones.length;
+        const recomendaciones = evaluaciones.filter((e) => e.recomendadoFinal).length;
+        const promedioFinal = promedioBase * (1 + BONO_POR_RECOMENDACION * recomendaciones);
+
+        return {
+          proyecto: equipo?.registro?.nombreProyecto || evaluaciones[0].nombreProyecto || equipo?.nombreEquipo || "Proyecto sin nombre",
+          codigo: equipo?.codigoProyecto || evaluaciones[0].codigoProyecto,
+          evaluaciones,
+          promedioBase,
+          promedioFinal,
+          recomendaciones,
+          documentos: new Set(evaluaciones.map((e) => e.documentoClave || e.nombreDocumento)).size,
+          maestros: Array.from(new Set(evaluaciones.map((e) => e.nombreMaestro || e.correoMaestro || e.maestroId))),
+        };
+      })
+      .sort((a, b) => b.promedioFinal - a.promedioFinal);
+  }, [calificaciones, equipos]);
+
+  return (
+    <main className="p-4 sm:p-6 md:p-8 max-w-[1500px] mx-auto space-y-6">
+      <div>
+        <p className="text-sm text-[#c8102e] font-bold uppercase tracking-wider">Resultados del concurso</p>
+        <h1 className="text-3xl font-bold text-[#202124] mt-1">Podio de evaluaciones</h1>
+        <p className="text-gray-500 mt-1">
+          Promedio de las evaluaciones registradas, con un +{BONO_POR_RECOMENDACION * 100}% extra por cada recomendación de los maestros para llegar a la final.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {podio.slice(0, 3).map((item, index) => (
+          <div key={item.codigo || item.proyecto} className={`bg-white border p-5 ${index === 0 ? "border-[#c8102e] shadow-md" : "border-gray-200"}`}>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-bold text-gray-500">Lugar {index + 1}</span>
+              {index === 0 ? <Trophy className="text-[#c8102e]" /> : <Medal className="text-gray-400" />}
+            </div>
+            <p className="text-xs text-[#c8102e] font-bold mt-4">{item.codigo || "Sin ID"}</p>
+            <h2 className="font-bold text-lg text-[#202124] mt-1">{item.proyecto}</h2>
+            <p className="text-4xl font-black text-[#c8102e] mt-3">
+              {item.promedioFinal.toFixed(2)}<span className="text-base">%</span>
+            </p>
+            {item.recomendaciones > 0 && (
+              <p className="text-xs text-gray-500 mt-1">
+                Base {item.promedioBase.toFixed(2)}% + {(BONO_POR_RECOMENDACION * 100 * item.recomendaciones).toFixed(0)}% bono
+              </p>
+            )}
+            <p className="text-xs text-gray-500 mt-2 flex items-center gap-3">
+              <span>{item.evaluaciones.length} evaluaciones · {item.documentos}/3 documentos</span>
+              {item.recomendaciones > 0 && (
+                <span className="inline-flex items-center gap-1 text-[#c8102e] font-semibold">
+                  <ThumbsUp size={12} /> {item.recomendaciones}
+                </span>
+              )}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <section className="bg-white border border-gray-200 overflow-hidden">
+        <div className="p-4 border-b flex items-center gap-2">
+          <Award className="text-[#c8102e]" size={20} />
+          <div>
+            <h2 className="font-bold text-[#202124]">Detalle por proyecto y evaluador</h2>
+            <p className="text-xs text-gray-500">Consulta quién calificó cada documento, con qué puntuación y si lo recomendó para la final.</p>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[1150px] text-sm">
+            <thead className="bg-[#202124] text-white text-left">
+              <tr>
+                <th className="p-3">Pos.</th>
+                <th className="p-3">Proyecto</th>
+                <th className="p-3">Promedio final</th>
+                <th className="p-3">Recomendaciones</th>
+                <th className="p-3">Documentos</th>
+                <th className="p-3">Evaluaciones</th>
+                <th className="p-3">Detalle de calificadores</th>
+              </tr>
+            </thead>
+            <tbody>
+              {podio.map((item, index) => (
+                <tr key={item.codigo || item.proyecto} className="border-t align-top">
+                  <td className="p-3 font-bold">{index + 1}</td>
+                  <td className="p-3">
+                    <span className="text-xs text-[#c8102e] font-bold">{item.codigo}</span><br />
+                    <span className="font-semibold text-gray-900">{item.proyecto}</span>
+                  </td>
+                  <td className="p-3 font-bold text-[#c8102e]">
+                    {item.promedioFinal.toFixed(2)}%
+                    {item.recomendaciones > 0 && <span className="block text-xs font-normal text-gray-400">base {item.promedioBase.toFixed(2)}%</span>}
+                  </td>
+                  <td className="p-3">
+                    <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold ${item.recomendaciones > 0 ? "bg-red-50 text-[#c8102e]" : "bg-gray-100 text-gray-500"}`}>
+                      <ThumbsUp size={12} /> {item.recomendaciones}
+                    </span>
+                  </td>
+                  <td className="p-3 text-gray-700">{item.documentos} / 3</td>
+                  <td className="p-3 text-gray-700">{item.evaluaciones.length}</td>
+                  <td className="p-3">
+                    <div className="space-y-2">
+                      {item.evaluaciones.map((evaluacion) => (
+                        <details key={evaluacion.id} className="border border-gray-200 p-2">
+                          <summary className="cursor-pointer text-gray-800">
+                            <b>{evaluacion.nombreDocumento || evaluacion.documentoClave || "Documento"}</b> · {evaluacion.puntajeTotal}/{evaluacion.puntajeMaximo} · {evaluacion.nombreMaestro || evaluacion.correoMaestro}
+                            {evaluacion.recomendadoFinal && <span className="ml-2 text-[#c8102e] font-semibold">· Recomendado ✓</span>}
+                          </summary>
+                          <div className="mt-2 text-xs text-gray-600 space-y-1">
+                            <p>Evaluó: {evaluacion.nombreMaestro || "Maestro"} ({evaluacion.correoMaestro || "sin correo"})</p>
+                            <p>Fecha: {new Date(evaluacion.fechaCalificacion).toLocaleString("es-MX")}</p>
+                            {evaluacion.rubrica?.map((criterio) => (
+                              <p key={criterio.criterio} className="flex justify-between border-t pt-1">
+                                <span>{criterio.criterio}</span><b>{criterio.puntosObtenidos}/{criterio.puntosMax}</b>
+                              </p>
+                            ))}
+                            {evaluacion.comentarios && <p className="italic mt-2">“{evaluacion.comentarios}”</p>}
+                          </div>
+                        </details>
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {podio.length === 0 && (
+                <tr><td colSpan={7} className="p-12 text-center text-gray-500">Aún no hay evaluaciones registradas.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  );
 }

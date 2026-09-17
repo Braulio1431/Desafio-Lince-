@@ -23,6 +23,7 @@ export async function guardarCalificacion(data: {
   nombreProyecto?: string;
   rubrica: CriterioRubrica[];
   comentarios: string;
+  recomendadoFinal: boolean;
 }) {
   const maestro = auth.currentUser;
   if (!maestro) throw new Error("La sesión del maestro terminó. Inicia sesión nuevamente.");
