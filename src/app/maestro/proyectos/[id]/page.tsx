@@ -6,13 +6,14 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { guardarCalificacion, obtenerCalificacionMaestro } from "@/lib/calificaciones";
 import { CriterioRubrica, DOCUMENTOS_EQUIPO, Equipo, RUBRICA_GENERICA } from "@/types";
+import { rubricasIniciales } from "@/lib/rubricas";
 import { ArrowLeft, CheckCircle2, ExternalLink, ThumbsUp } from "lucide-react";
 
 export default function EvaluarProyectoPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [equipo, setEquipo] = useState<Equipo | null>(null);
-  const [documento, setDocumento] = useState<"documento1" | "documento2" | "documento3">("documento1");
+  const [documento, setDocumento] = useState<"planNegocios" | "modeloCanvas" | "planFinanciero" | "videoPitch">("planNegocios");
   const [rubrica, setRubrica] = useState<CriterioRubrica[]>([]);
   const [comentarios, setComentarios] = useState("");
   const [recomendado, setRecomendado] = useState(false);
@@ -27,9 +28,9 @@ export default function EvaluarProyectoPage() {
       obtenerCalificacionMaestro(id, documento),
     ]).then(([proyecto, configuracion, calificacion]) => {
       if (proyecto.exists()) setEquipo({ id: proyecto.id, ...proyecto.data() } as Equipo);
-      const criterios = configuracion.exists() ? configuracion.data().rubricas?.[documento] : null;
+      const criterios = configuracion.exists() ? configuracion.data().rubricas?.[documento] : rubricasIniciales()[documento];
       setRubrica(
-        (Array.isArray(criterios) ? criterios : RUBRICA_GENERICA).map(
+          (Array.isArray(criterios) ? criterios : rubricasIniciales()[documento]).map(
           (c: { criterio: string; puntosMax: number }) => ({ ...c, puntosObtenidos: 0 }),
         ),
       );
@@ -41,6 +42,8 @@ export default function EvaluarProyectoPage() {
   if (!equipo) return <main className="p-8 text-gray-500">Cargando proyecto...</main>;
 
   const seleccionado = equipo.documentos?.find((d) => d.clave === documento);
+  const bloqueTotal = rubrica.reduce((sum, c) => sum + c.puntosMax, 0);
+  const puntosBloque = bloqueTotal ? (rubrica.reduce((sum, c) => sum + c.puntosObtenidos, 0) / bloqueTotal) * 25 : 0;
 
   const actualizaPunto = (index: number, valor: number) =>
     setRubrica((r) =>
@@ -125,35 +128,20 @@ export default function EvaluarProyectoPage() {
                 </p>
               )}
             </div>
-            {seleccionado?.link && (
+            {(seleccionado?.link || seleccionado?.archivoURL) && (
               <a
-                href={seleccionado.link}
+                href={seleccionado.archivoURL || seleccionado.link}
                 target="_blank"
                 rel="noreferrer"
                 className="text-sm text-[#c8102e] font-semibold flex items-center gap-1"
               >
-                Abrir documento <ExternalLink size={15} />
+                Abrir {documento === "videoPitch" ? "video" : "documento"} <ExternalLink size={15} />
               </a>
             )}
           </div>
 
           <div className="divide-y border border-gray-200">
-            {rubrica.map((c, index) => (
-              <div key={c.criterio} className="p-3 flex items-center justify-between gap-4">
-                <span className="text-sm text-gray-800">
-                  {index + 1}. {c.criterio}
-                </span>
-                <input
-                  type="number"
-                  min="0"
-                  max={c.puntosMax}
-                  value={c.puntosObtenidos}
-                  onChange={(e) => actualizaPunto(index, Number(e.target.value))}
-                  disabled={yaCalifico}
-                  className="w-20 border border-gray-300 px-3 py-2 text-gray-900 disabled:bg-gray-100"
-                />
-              </div>
-            ))}
+            {rubrica.map((c, index) => <div key={c.criterio} className="p-4 space-y-3"><p className="text-sm font-semibold text-gray-800">{index + 1}. {c.criterio}</p><div className="grid grid-cols-1 sm:grid-cols-5 gap-2">{(c.niveles ?? []).map((nivel, n) => { const valor = c.puntosMax === 4 ? n : n + 1; return <button type="button" key={n} disabled={yaCalifico} onClick={() => actualizaPunto(index, valor)} className={`text-left p-3 border text-xs transition ${c.puntosObtenidos === valor ? "border-[#c8102e] bg-red-50 ring-1 ring-[#c8102e]" : "border-gray-200 bg-white hover:border-red-300"}`}><b className="block text-[#c8102e]">Nivel {valor}</b><span className="text-gray-600">{nivel}</span></button>; })}</div></div>)}
           </div>
 
           <label
@@ -186,8 +174,7 @@ export default function EvaluarProyectoPage() {
 
           <div className="flex items-center justify-between">
             <span className="font-bold text-[#202124]">
-              Total: {rubrica.reduce((sum, c) => sum + c.puntosObtenidos, 0)} /{" "}
-              {rubrica.reduce((sum, c) => sum + c.puntosMax, 0)}
+              Bloque: {puntosBloque.toFixed(2)} / 25 puntos
             </span>
             <button
               onClick={guardar}

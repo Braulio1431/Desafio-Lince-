@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
   try {
     const header = request.headers.get("authorization");
     const token = header?.startsWith("Bearer ") ? header.slice(7) : "";
-    if (!token) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    if (!token) return NextResponse.json({ error: "No autorizado: falta el token de sesión." }, { status: 401 });
     const actual = await adminAuth.verifyIdToken(token);
     if (actual.rol !== "admin" && actual.role !== "admin") return NextResponse.json({ error: "Sólo un administrador puede crear usuarios" }, { status: 403 });
 
@@ -23,7 +23,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ uid: user.uid, nombre, correo, rol });
   } catch (error) {
     const message = error instanceof Error ? error.message : "No se pudo crear el usuario";
-    return NextResponse.json({ error: message }, { status: 400 });
+    const errorResponse = /credential|Project Id|private_key/i.test(message)
+      ? "El servidor no tiene credenciales de Firebase Admin. Configura FIREBASE_SERVICE_ACCOUNT_JSON en las variables de entorno del despliegue."
+      : message;
+    return NextResponse.json({ error: errorResponse }, { status: 400 });
   }
 }
 

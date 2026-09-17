@@ -30,8 +30,10 @@ export async function guardarCalificacion(data: {
   const id = idCalificacion(data.equipoId, data.documentoClave, maestro.uid);
   const existente = await getDoc(doc(db, "calificaciones", id));
   if (existente.exists()) throw new Error("Ya calificaste este documento de este proyecto. No se puede volver a calificar.");
-  const puntajeTotal = data.rubrica.reduce((total, criterio) => total + criterio.puntosObtenidos, 0);
-  const puntajeMaximo = data.rubrica.reduce((total, criterio) => total + criterio.puntosMax, 0);
+  const suma = data.rubrica.reduce((total, criterio) => total + criterio.puntosObtenidos, 0);
+  const puntajeMaximo = 25;
+  const maximoRubro = data.rubrica.reduce((total, criterio) => total + criterio.puntosMax, 0);
+  const puntajeTotal = maximoRubro ? Number(((suma / maximoRubro) * puntajeMaximo).toFixed(4)) : 0;
   await setDoc(doc(db, "calificaciones", id), {
     ...data,
     maestroId: maestro.uid,

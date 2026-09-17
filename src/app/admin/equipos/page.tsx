@@ -146,7 +146,7 @@ export default function EquiposAdminPage() {
                   </td>
                   <td className="p-4">
                     <span className={`px-2 py-1 text-xs font-semibold ${(equipo.documentos?.filter((d) => d.link).length ?? 0) === 3 ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}`}>
-                      {equipo.documentos?.filter((d) => d.link).length ?? 0} / 3
+                      {equipo.documentos?.filter((d) => d.link).length ?? 0} / 4
                     </span>
                   </td>
                   <td className="p-4">

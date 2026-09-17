@@ -18,7 +18,6 @@ type Podio = {
   maestros: string[];
 };
 
-const BONO_POR_RECOMENDACION = 0.05; // 5% extra por cada recomendación de "llegar a la final"
 
 export default function PodioAdminPage() {
   const [calificaciones, setCalificaciones] = useState<Resultado[]>([]);
@@ -45,11 +44,12 @@ export default function PodioAdminPage() {
     return Array.from(mapa.entries())
       .map(([equipoId, evaluaciones]) => {
         const equipo = equipos.find((e) => e.id === equipoId);
-        const promedioBase =
-          evaluaciones.reduce((total, e) => total + (e.puntajeMaximo ? (e.puntajeTotal / e.puntajeMaximo) * 100 : 0), 0) /
-          evaluaciones.length;
+        const porRubro = new Map<string, Resultado[]>();
+        evaluaciones.forEach((e) => { const key = e.documentoClave || e.nombreDocumento || "sin-rubro"; porRubro.set(key, [...(porRubro.get(key) ?? []), e]); });
+        const rubros = Array.from(porRubro.values());
+        const promedioBase = rubros.length ? rubros.reduce((total, grupo) => total + (grupo.reduce((s, e) => s + (e.puntajeMaximo ? (e.puntajeTotal / e.puntajeMaximo) * 25 : 0), 0) / grupo.length), 0) : 0;
         const recomendaciones = evaluaciones.filter((e) => e.recomendadoFinal).length;
-        const promedioFinal = promedioBase * (1 + BONO_POR_RECOMENDACION * recomendaciones);
+        const promedioFinal = Math.min(100, promedioBase);
 
         return {
           proyecto: equipo?.registro?.nombreProyecto || evaluaciones[0].nombreProyecto || equipo?.nombreEquipo || "Proyecto sin nombre",
@@ -71,7 +71,7 @@ export default function PodioAdminPage() {
         <p className="text-sm text-[#c8102e] font-bold uppercase tracking-wider">Resultados del concurso</p>
         <h1 className="text-3xl font-bold text-[#202124] mt-1">Podio de evaluaciones</h1>
         <p className="text-gray-500 mt-1">
-          Promedio de las evaluaciones registradas, con un +{BONO_POR_RECOMENDACION * 100}% extra por cada recomendación de los maestros para llegar a la final.
+          Promedio ponderado de los cuatro rubros: cada rubro aporta hasta 25 puntos y el resultado final nunca supera 100.
         </p>
       </div>
 
@@ -85,15 +85,15 @@ export default function PodioAdminPage() {
             <p className="text-xs text-[#c8102e] font-bold mt-4">{item.codigo || "Sin ID"}</p>
             <h2 className="font-bold text-lg text-[#202124] mt-1">{item.proyecto}</h2>
             <p className="text-4xl font-black text-[#c8102e] mt-3">
-              {item.promedioFinal.toFixed(2)}<span className="text-base">%</span>
+              {item.promedioFinal.toFixed(2)}<span className="text-base"> / 100</span>
             </p>
             {item.recomendaciones > 0 && (
               <p className="text-xs text-gray-500 mt-1">
-                Base {item.promedioBase.toFixed(2)}% + {(BONO_POR_RECOMENDACION * 100 * item.recomendaciones).toFixed(0)}% bono
+                {item.recomendaciones} recomendación(es) para la final
               </p>
             )}
             <p className="text-xs text-gray-500 mt-2 flex items-center gap-3">
-              <span>{item.evaluaciones.length} evaluaciones · {item.documentos}/3 documentos</span>
+              <span>{item.evaluaciones.length} evaluaciones · {item.documentos}/4 rubros</span>
               {item.recomendaciones > 0 && (
                 <span className="inline-flex items-center gap-1 text-[#c8102e] font-semibold">
                   <ThumbsUp size={12} /> {item.recomendaciones}
@@ -134,15 +134,15 @@ export default function PodioAdminPage() {
                     <span className="font-semibold text-gray-900">{item.proyecto}</span>
                   </td>
                   <td className="p-3 font-bold text-[#c8102e]">
-                    {item.promedioFinal.toFixed(2)}%
-                    {item.recomendaciones > 0 && <span className="block text-xs font-normal text-gray-400">base {item.promedioBase.toFixed(2)}%</span>}
+                    {item.promedioFinal.toFixed(2)} / 100
+                    <span className="block text-xs font-normal text-gray-400">base {item.promedioBase.toFixed(2)} / 100</span>
                   </td>
                   <td className="p-3">
                     <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold ${item.recomendaciones > 0 ? "bg-red-50 text-[#c8102e]" : "bg-gray-100 text-gray-500"}`}>
                       <ThumbsUp size={12} /> {item.recomendaciones}
                     </span>
                   </td>
-                  <td className="p-3 text-gray-700">{item.documentos} / 3</td>
+                  <td className="p-3 text-gray-700">{item.documentos} / 4</td>
                   <td className="p-3 text-gray-700">{item.evaluaciones.length}</td>
                   <td className="p-3">
                     <div className="space-y-2">

@@ -1,0 +1,18 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function autenticado() { return request.auth != null; }
+    function admin() { return autenticado() && request.auth.token.rol == 'admin'; }
+    function maestro() { return autenticado() && request.auth.token.rol == 'maestro'; }
+    match /proyectos/{equipoId}/{rubrica}/{archivo} {
+      allow read: if admin() || maestro();
+      allow write: if admin() && rubrica in ['planNegocios', 'modeloCanvas', 'planFinanciero'];
+      allow delete: if admin();
+    }
+    match /entregas/{equipoId}/{archivo} {
+      allow read: if admin() || maestro();
+      allow write: if admin();
+      allow delete: if admin();
+    }
+  }
+}

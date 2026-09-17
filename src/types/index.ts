@@ -47,9 +47,10 @@ export interface Equipo {
 }
 
 export const DOCUMENTOS_EQUIPO = [
-  { clave: "documento1", nombre: "Documento 1" },
-  { clave: "documento2", nombre: "Documento 2" },
-  { clave: "documento3", nombre: "Documento 3" },
+  { clave: "planNegocios", nombre: "Plan de Negocios", tipo: "archivo" },
+  { clave: "modeloCanvas", nombre: "Modelo CANVAS", tipo: "archivo" },
+  { clave: "planFinanciero", nombre: "Plan Financiero", tipo: "archivo" },
+  { clave: "videoPitch", nombre: "Video Pitch", tipo: "video" },
 ] as const;
 
 export type ClaveDocumento = (typeof DOCUMENTOS_EQUIPO)[number]["clave"];
@@ -58,6 +59,9 @@ export interface DocumentoEquipo {
   clave: ClaveDocumento;
   nombre: string;
   link: string;
+  tipo?: "archivo" | "video";
+  archivoURL?: string;
+  nombreArchivo?: string;
   fechaActualizacion?: string;
   actualizadoPor?: string;
 }
@@ -84,6 +88,7 @@ export interface CriterioRubrica {
   criterio: string;
   puntosMax: number;
   puntosObtenidos: number;
+  niveles?: string[];
 }
 
 export interface Calificacion {
