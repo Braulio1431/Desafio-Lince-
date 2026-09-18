@@ -46,7 +46,7 @@ export function parsearExcelEquipos(file: File): Promise<Omit<Equipo, "id">[]> {
         const hoja = libro.Sheets[libro.SheetNames[0]];
         const filas = XLSX.utils.sheet_to_json<unknown[]>(hoja, { header: 1, raw: false, defval: "", blankrows: false });
         const indiceEncabezado = encontrarFilaEncabezados(filas);
-        const equipos = new Map<string, Omit<Equipo, "id">>();
+        const equipos: Omit<Equipo, "id">[] = [];
         for (let indice = indiceEncabezado + 1; indice < filas.length; indice++) {
           const fila = filas[indice];
           if (!filaTieneDatos(fila)) continue;
@@ -54,13 +54,10 @@ export function parsearExcelEquipos(file: File): Promise<Omit<Equipo, "id">[]> {
           const proyecto = texto(columnas[10]);
           // Filas de continuación: el formato oficial debe tener una fila completa.
           if (!proyecto) throw new Error(`La fila ${indice + 1} no tiene nombre de proyecto.`);
-          const nuevo = construirRegistro(columnas, indice + 1);
-          const existente = equipos.get(proyecto);
-          if (!existente) equipos.set(proyecto, nuevo);
-          else if (!existente.integrantes.some((integrante) => integrante.matricula === nuevo.integrantes[0].matricula)) existente.integrantes.push(nuevo.integrantes[0]);
+          equipos.push(construirRegistro(columnas, indice + 1));
         }
-        if (!equipos.size) throw new Error("No se encontraron proyectos debajo de la fila de encabezados.");
-        resolve(Array.from(equipos.values()));
+        if (!equipos.length) throw new Error("No se encontraron proyectos debajo de la fila de encabezados.");
+        resolve(equipos);
       } catch (error) { reject(error instanceof Error ? error : new Error("No se pudo leer el archivo.")); }
     };
     lector.onerror = () => reject(new Error("No se pudo leer el archivo Excel."));

@@ -54,6 +54,11 @@ export const DOCUMENTOS_EQUIPO = [
 ] as const;
 
 export type ClaveDocumento = (typeof DOCUMENTOS_EQUIPO)[number]["clave"];
+export const RUBRICAS_ESPECIALES = [
+  { clave: "categoriaProyecto", nombre: "Categoría del proyecto", peso: 10 },
+  { clave: "esgSostenibilidad", nombre: "ESG / Sostenibilidad", peso: 10 },
+] as const;
+export type ClaveRubrica = ClaveDocumento | (typeof RUBRICAS_ESPECIALES)[number]["clave"];
 
 export interface DocumentoEquipo {
   clave: ClaveDocumento;
@@ -89,6 +94,8 @@ export interface CriterioRubrica {
   puntosMax: number;
   puntosObtenidos: number;
   niveles?: string[];
+  esCategoria?: boolean;
+  nivelesPorCategoria?: Record<string, string[]>;
 }
 
 export interface Calificacion {
@@ -101,7 +108,8 @@ export interface Calificacion {
   puntajeMaximo: number;
   comentarios: string;
   fechaCalificacion: string;
-  documentoClave?: ClaveDocumento;
+  documentoClave?: ClaveRubrica;
+  pesoRubrica?: number;
   nombreDocumento?: string;
   nombreMaestro?: string;
   correoMaestro?: string;

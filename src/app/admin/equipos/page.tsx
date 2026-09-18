@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { escucharEquipos, eliminarEquipo } from "@/lib/equipos";
+import { escucharEquipos, eliminarEquipo, eliminarTodosLosProyectosYCalificaciones } from "@/lib/equipos";
 import { Equipo } from "@/types";
 import { ModalEquipo } from "@/components/ModalEquipo";
 import { ModalImportarEquipos } from "@/components/ModalImportarEquipos";
@@ -12,6 +12,8 @@ export default function EquiposAdminPage() {
   const [modal, setModal] = useState(false);
   const [editando, setEditando] = useState<Equipo | null>(null);
   const [importar, setImportar] = useState(false);
+  const [eliminandoTodo, setEliminandoTodo] = useState(false);
+  const [mensajeEliminacion, setMensajeEliminacion] = useState("");
 
   // --- Filtros ---
   const [busqueda, setBusqueda] = useState("");
@@ -21,6 +23,17 @@ export default function EquiposAdminPage() {
 
   async function eliminar(id: string) {
     if (confirm("¿Eliminar este proyecto? Esta acción no se puede deshacer.")) await eliminarEquipo(id);
+  }
+
+  async function eliminarTodo() {
+    if (prompt("Esta accion es irreversible. Escribe ELIMINAR para continuar:") !== "ELIMINAR") return;
+    setEliminandoTodo(true); setMensajeEliminacion("");
+    try {
+      const resultado = await eliminarTodosLosProyectosYCalificaciones();
+      setMensajeEliminacion(`Se eliminaron ${resultado.proyectos} proyectos, ${resultado.entregas} entregas y ${resultado.calificaciones} calificaciones.`);
+    } catch (error) {
+      setMensajeEliminacion(error instanceof Error ? error.message : "No se pudieron eliminar los registros.");
+    } finally { setEliminandoTodo(false); }
   }
 
   const campusDisponibles = Array.from(
@@ -83,6 +96,12 @@ export default function EquiposAdminPage() {
           </p>
         </div>
       </div>
+
+      <section className="border border-red-200 bg-red-50 p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div><h2 className="font-bold text-red-900">Borrado general de registros</h2><p className="text-sm text-red-800 mt-1">Elimina proyectos, entregas y calificaciones de Firestore. Requiere escribir ELIMINAR.</p></div>
+        <button onClick={eliminarTodo} disabled={eliminandoTodo} className="inline-flex items-center justify-center gap-2 bg-red-700 text-white px-4 py-2.5 font-semibold disabled:opacity-50"><Trash2 size={17} />{eliminandoTodo ? "Eliminando..." : "Eliminar todos los proyectos y calificaciones"}</button>
+        {mensajeEliminacion && <p className="text-sm text-red-900">{mensajeEliminacion}</p>}
+      </section>
 
       {/* --- Barra de filtros --- */}
       <div className="bg-white border border-gray-200 p-4 flex flex-col md:flex-row gap-3 md:items-center">

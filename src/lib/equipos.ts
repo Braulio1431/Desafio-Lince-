@@ -10,7 +10,7 @@ import {
   getDocs,
   where,
 } from "firebase/firestore";
-import { db } from "./firebase";
+import { auth, db } from "./firebase";
 import { Equipo } from "@/types";
 
 export function escucharEquipos(callback: (equipos: Equipo[]) => void) {
@@ -53,4 +53,13 @@ export async function actualizarEquipo(
 
 export async function eliminarEquipo(id: string) {
   return deleteDoc(doc(db, "equipos", id));
+}
+
+export async function eliminarTodosLosProyectosYCalificaciones() {
+  const token = await auth.currentUser?.getIdToken();
+  if (!token) throw new Error("La sesión terminó. Inicia sesión nuevamente.");
+  const respuesta = await fetch("/api/admin/eliminar-todo", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+  const resultado = await respuesta.json();
+  if (!respuesta.ok) throw new Error(resultado.error ?? "No se pudieron eliminar los registros.");
+  return resultado as { proyectos: number; entregas: number; calificaciones: number };
 }

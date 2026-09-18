@@ -5,15 +5,15 @@ import { useParams, useRouter } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { guardarCalificacion, obtenerCalificacionMaestro } from "@/lib/calificaciones";
-import { CriterioRubrica, DOCUMENTOS_EQUIPO, Equipo, RUBRICA_GENERICA } from "@/types";
-import { rubricasIniciales } from "@/lib/rubricas";
+import { ClaveRubrica, CriterioRubrica, DOCUMENTOS_EQUIPO, Equipo, RUBRICAS_ESPECIALES } from "@/types";
+import { PONDERACION_RUBRICAS, prepararRubricaParaCategoria, rubricasIniciales } from "@/lib/rubricas";
 import { ArrowLeft, CheckCircle2, ExternalLink, ThumbsUp } from "lucide-react";
 
 export default function EvaluarProyectoPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [equipo, setEquipo] = useState<Equipo | null>(null);
-  const [documento, setDocumento] = useState<"planNegocios" | "modeloCanvas" | "planFinanciero" | "videoPitch">("planNegocios");
+  const [documento, setDocumento] = useState<ClaveRubrica>("planNegocios");
   const [rubrica, setRubrica] = useState<CriterioRubrica[]>([]);
   const [comentarios, setComentarios] = useState("");
   const [recomendado, setRecomendado] = useState(false);
@@ -29,8 +29,9 @@ export default function EvaluarProyectoPage() {
     ]).then(([proyecto, configuracion, calificacion]) => {
       if (proyecto.exists()) setEquipo({ id: proyecto.id, ...proyecto.data() } as Equipo);
       const criterios = configuracion.exists() ? configuracion.data().rubricas?.[documento] : rubricasIniciales()[documento];
+      const criteriosPorCategoria = prepararRubricaParaCategoria(Array.isArray(criterios) ? criterios : rubricasIniciales()[documento], (proyecto.data() as Equipo)?.registro?.clasificacionProyecto, documento === "planNegocios");
       setRubrica(
-          (Array.isArray(criterios) ? criterios : rubricasIniciales()[documento]).map(
+          criteriosPorCategoria.map(
           (c: { criterio: string; puntosMax: number }) => ({ ...c, puntosObtenidos: 0 }),
         ),
       );
@@ -41,7 +42,7 @@ export default function EvaluarProyectoPage() {
 
   if (!equipo) return <main className="p-8 text-gray-500">Cargando proyecto...</main>;
 
-  const seleccionado = equipo.documentos?.find((d) => d.clave === documento);
+  const seleccionado = DOCUMENTOS_EQUIPO.some((d) => d.clave === documento) ? equipo.documentos?.find((d) => d.clave === documento) : undefined;
   const bloqueTotal = rubrica.reduce((sum, c) => sum + c.puntosMax, 0);
   const puntosBloque = bloqueTotal ? (rubrica.reduce((sum, c) => sum + c.puntosObtenidos, 0) / bloqueTotal) * 25 : 0;
 
@@ -59,13 +60,14 @@ export default function EvaluarProyectoPage() {
         entregaId: `${equipo!.id}_${documento}`,
         equipoId: equipo!.id,
         documentoClave: documento,
-        nombreDocumento: DOCUMENTOS_EQUIPO.find((d) => d.clave === documento)?.nombre ?? documento,
+                nombreDocumento: [...DOCUMENTOS_EQUIPO, ...RUBRICAS_ESPECIALES].find((d) => d.clave === documento)?.nombre ?? documento,
         nombreEquipo: equipo!.nombreEquipo,
         codigoProyecto: equipo!.codigoProyecto,
         nombreProyecto: equipo!.registro?.nombreProyecto,
         rubrica,
         comentarios,
-        recomendadoFinal: recomendado,
+                recomendadoFinal: recomendado,
+                pesoRubrica: PONDERACION_RUBRICAS[documento],
       });
       setYaCalifico(true);
       setMensaje("Evaluación guardada correctamente.");
@@ -100,7 +102,7 @@ export default function EvaluarProyectoPage() {
       <div className="grid lg:grid-cols-[280px_1fr] gap-6">
         <aside className="bg-white border border-gray-200 p-4 h-fit">
           <h2 className="font-bold text-[#202124] mb-3">Documentos del proyecto</h2>
-          {DOCUMENTOS_EQUIPO.map(({ clave, nombre }) => {
+          {[...DOCUMENTOS_EQUIPO, ...RUBRICAS_ESPECIALES].map(({ clave, nombre }) => {
             const d = equipo!.documentos?.find((x) => x.clave === clave);
             return (
               <button
@@ -109,7 +111,7 @@ export default function EvaluarProyectoPage() {
                 className={`w-full text-left p-3 mb-2 border ${documento === clave ? "border-[#c8102e] bg-red-50" : "border-gray-200"}`}
               >
                 <span className="block text-sm font-semibold text-gray-800">{nombre}</span>
-                <span className="text-xs text-gray-500">{d?.link ? "Enlace disponible" : "Sin enlace"}</span>
+                <span className="text-xs text-gray-500">{RUBRICAS_ESPECIALES.some((r) => r.clave === clave) ? `${PONDERACION_RUBRICAS[clave as ClaveRubrica]} puntos` : d?.link ? "Enlace disponible" : "Sin enlace"}</span>
               </button>
             );
           })}
@@ -119,7 +121,7 @@ export default function EvaluarProyectoPage() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-[#202124]">
-                Evaluación · {DOCUMENTOS_EQUIPO.find((d) => d.clave === documento)?.nombre}
+                Evaluación · {[...DOCUMENTOS_EQUIPO, ...RUBRICAS_ESPECIALES].find((d) => d.clave === documento)?.nombre}
               </h2>
               <p className="text-sm text-gray-500 mt-1">Asigna los puntos definidos por administración.</p>
               {yaCalifico && (
@@ -174,7 +176,7 @@ export default function EvaluarProyectoPage() {
 
           <div className="flex items-center justify-between">
             <span className="font-bold text-[#202124]">
-              Bloque: {puntosBloque.toFixed(2)} / 25 puntos
+              Bloque: {puntosBloque.toFixed(2)} / {PONDERACION_RUBRICAS[documento]} puntos
             </span>
             <button
               onClick={guardar}

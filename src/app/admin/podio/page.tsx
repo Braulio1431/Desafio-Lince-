@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Calificacion, Equipo } from "@/types";
+import { PONDERACION_RUBRICAS } from "@/lib/rubricas";
 import { Award, Medal, Trophy, ThumbsUp } from "lucide-react";
 
 type Resultado = Calificacion & { id: string };
@@ -47,7 +48,10 @@ export default function PodioAdminPage() {
         const porRubro = new Map<string, Resultado[]>();
         evaluaciones.forEach((e) => { const key = e.documentoClave || e.nombreDocumento || "sin-rubro"; porRubro.set(key, [...(porRubro.get(key) ?? []), e]); });
         const rubros = Array.from(porRubro.values());
-        const promedioBase = rubros.length ? rubros.reduce((total, grupo) => total + (grupo.reduce((s, e) => s + (e.puntajeMaximo ? (e.puntajeTotal / e.puntajeMaximo) * 25 : 0), 0) / grupo.length), 0) : 0;
+        const promedioBase = rubros.length ? rubros.reduce((total, grupo) => total + (grupo.reduce((s, e) => {
+          const peso = e.pesoRubrica ?? (e.documentoClave ? PONDERACION_RUBRICAS[e.documentoClave] : 25);
+          return s + (e.puntajeMaximo ? (e.puntajeTotal / e.puntajeMaximo) * peso : 0);
+        }, 0) / grupo.length), 0) : 0;
         const recomendaciones = evaluaciones.filter((e) => e.recomendadoFinal).length;
         const promedioFinal = Math.min(100, promedioBase);
 
@@ -71,7 +75,7 @@ export default function PodioAdminPage() {
         <p className="text-sm text-[#c8102e] font-bold uppercase tracking-wider">Resultados del concurso</p>
         <h1 className="text-3xl font-bold text-[#202124] mt-1">Podio de evaluaciones</h1>
         <p className="text-gray-500 mt-1">
-          Promedio ponderado de los cuatro rubros: cada rubro aporta hasta 25 puntos y el resultado final nunca supera 100.
+          Promedio ponderado de seis rúbricas: 30 + 20 + 20 + 10 + 10 + 10 puntos.
         </p>
       </div>
 
@@ -93,7 +97,7 @@ export default function PodioAdminPage() {
               </p>
             )}
             <p className="text-xs text-gray-500 mt-2 flex items-center gap-3">
-              <span>{item.evaluaciones.length} evaluaciones · {item.documentos}/4 rubros</span>
+              <span>{item.evaluaciones.length} evaluaciones · {item.documentos}/6 rúbricas</span>
               {item.recomendaciones > 0 && (
                 <span className="inline-flex items-center gap-1 text-[#c8102e] font-semibold">
                   <ThumbsUp size={12} /> {item.recomendaciones}
@@ -142,7 +146,7 @@ export default function PodioAdminPage() {
                       <ThumbsUp size={12} /> {item.recomendaciones}
                     </span>
                   </td>
-                  <td className="p-3 text-gray-700">{item.documentos} / 4</td>
+                  <td className="p-3 text-gray-700">{item.documentos} / 6</td>
                   <td className="p-3 text-gray-700">{item.evaluaciones.length}</td>
                   <td className="p-3">
                     <div className="space-y-2">

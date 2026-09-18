@@ -7,9 +7,12 @@ import path from "node:path";
 function getAdminApp() {
   if (getApps().length) return getApps()[0];
   const json = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-  const ruta = process.env.GOOGLE_APPLICATION_CREDENTIALS ?? path.join(process.cwd(), "serviceAccountKey.json");
+  const rutas = process.env.GOOGLE_APPLICATION_CREDENTIALS
+    ? [process.env.GOOGLE_APPLICATION_CREDENTIALS]
+    : [path.join(process.cwd(), "serviceAccountKey.json"), path.join(process.cwd(), "..", "serviceAccountKey.json")];
   if (json) return initializeApp({ credential: cert(JSON.parse(json)) });
-  if (fs.existsSync(ruta)) {
+  const ruta = rutas.find((candidata) => fs.existsSync(candidata));
+  if (ruta) {
     const serviceAccount = JSON.parse(fs.readFileSync(/* turbopackIgnore: true */ ruta, "utf8"));
     return initializeApp({ credential: cert(serviceAccount) });
   }
