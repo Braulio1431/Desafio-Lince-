@@ -54,3 +54,7 @@ export async function actualizarEquipo(
 export async function eliminarEquipo(id: string) {
   return deleteDoc(doc(db, "equipos", id));
 }
+
+export async function asignarMaestros(equipoId: string, maestrosAsignados: string[]) {
+  return updateDoc(doc(db, "equipos", equipoId), { maestrosAsignados });
+}
