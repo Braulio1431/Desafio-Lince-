@@ -96,18 +96,13 @@ export default function EquiposAdminPage() {
         </div>
       </div>
 
-<<<<<<< HEAD
       <section className="border border-red-200 bg-red-50 p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div><h2 className="font-bold text-red-900">Borrado general de registros</h2><p className="text-sm text-red-800 mt-1">Elimina proyectos, entregas y calificaciones de Firestore. Requiere escribir ELIMINAR.</p></div>
         <button onClick={eliminarTodo} disabled={eliminandoTodo} className="inline-flex items-center justify-center gap-2 bg-red-700 text-white px-4 py-2.5 font-semibold disabled:opacity-50"><Trash2 size={17} />{eliminandoTodo ? "Eliminando..." : "Eliminar todos los proyectos y calificaciones"}</button>
         {mensajeEliminacion && <p className="text-sm text-red-900">{mensajeEliminacion}</p>}
       </section>
 
-      {/* --- Barra de filtros --- */}
-      <div className="bg-white border border-gray-200 p-4 flex flex-col md:flex-row gap-3 md:items-center">
-=======
       <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col md:flex-row gap-3 md:items-center">
->>>>>>> ae846c7a695c2bddf16b2a9c6e36ef52bb508d30
         <div className="relative flex-1">
           <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
