@@ -44,6 +44,7 @@ export interface Equipo {
   fechaAlta: string;
   registro?: DatosRegistroEquipo;
   documentos?: DocumentoEquipo[];
+   maestrosAsignados?: string[];
 }
 
 export const DOCUMENTOS_EQUIPO = [

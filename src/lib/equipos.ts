@@ -55,6 +55,7 @@ export async function eliminarEquipo(id: string) {
   return deleteDoc(doc(db, "equipos", id));
 }
 
+<<<<<<< HEAD
 export async function eliminarTodosLosProyectosYCalificaciones() {
   const token = await auth.currentUser?.getIdToken();
   if (!token) throw new Error("La sesión terminó. Inicia sesión nuevamente.");
@@ -63,3 +64,8 @@ export async function eliminarTodosLosProyectosYCalificaciones() {
   if (!respuesta.ok) throw new Error(resultado.error ?? "No se pudieron eliminar los registros.");
   return resultado as { proyectos: number; entregas: number; calificaciones: number };
 }
+=======
+export async function asignarMaestros(equipoId: string, maestrosAsignados: string[]) {
+  return updateDoc(doc(db, "equipos", equipoId), { maestrosAsignados });
+}
+>>>>>>> ae846c7a695c2bddf16b2a9c6e36ef52bb508d30
