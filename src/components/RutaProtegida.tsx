@@ -9,19 +9,21 @@ export function RutaProtegida({
   rolRequerido,
   children,
 }: {
-  rolRequerido: Rol;
+  rolRequerido: Rol | Rol[];
   children: React.ReactNode;
 }) {
   const { user, rol, cargando } = useAuth();
   const router = useRouter();
+  const permitidos = Array.isArray(rolRequerido) ? rolRequerido : [rolRequerido];
+  const autorizado = rol !== null && permitidos.includes(rol);
 
   useEffect(() => {
     if (cargando) return;
-    if (!user || rol !== rolRequerido) {
+    if (!user || !autorizado) {
       router.replace("/login");
     }
-  }, [user, rol, cargando, rolRequerido, router]);
+  }, [user, autorizado, cargando, router]);
 
-  if (cargando || !user || rol !== rolRequerido) return null;
+  if (cargando || !user || !autorizado) return null;
   return <>{children}</>;
 }

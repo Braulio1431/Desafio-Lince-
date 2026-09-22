@@ -50,9 +50,11 @@ export default function EntregasAdminPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
         <h1 className="text-2xl font-bold text-gray-900">Entregas ({entregas.length})</h1>
-        <p className="text-sm text-gray-500">Los documentos nuevos se registran como enlaces desde la ficha de cada equipo.</p>
+        <p className="text-sm text-gray-500">
+          Los documentos nuevos se registran como enlaces desde la ficha de cada equipo.
+        </p>
       </div>
 
       <div className="flex flex-col md:flex-row gap-4">
@@ -61,72 +63,73 @@ export default function EntregasAdminPage() {
       </div>
 
       <div className="bg-white border border-gray-200 rounded-none overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-100 text-left">
-            <tr>
-              <th className="p-3 text-gray-700">Equipo</th>
-              <th className="p-3 text-gray-700">Archivo</th>
-              <th className="p-3 text-gray-700">Tipo</th>
-              <th className="p-3 text-gray-700">Subido por</th>
-              <th className="p-3 text-gray-700">Estado</th>
-              <th className="p-3 text-right text-gray-700">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {entregasFiltradas.map((entrega) => (
-              <tr key={entrega.id} className="border-t border-gray-200">
-                <td className="p-3 font-medium text-gray-900">{entrega.nombreEquipo}</td>
-                <td className="p-3 text-gray-900">{entrega.nombreArchivo}</td>
-                <td className="p-3 capitalize text-gray-700">{entrega.tipo}</td>
-                <td className="p-3 text-gray-600">
-                  {mapaUsuarios.get(entrega.subidoPor) ?? entrega.subidoPor}
-                </td>
-                <td className="p-3">
-                  <span
-                    className={`text-xs px-2 py-1 rounded-none ${
-                      entrega.estado === "calificado"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-yellow-100 text-yellow-700"
-                    }`}
-                  >
-                    {entrega.estado}
-                  </span>
-                </td>
-                <td className="p-3 text-right">
-                  <div className="flex justify-end gap-3">
-                    <button
-                      onClick={() => setEntregaEditando(entrega)}
-                      className="flex items-center gap-1 text-gray-600 hover:text-[#D7282F] text-sm"
-                    >
-                      <Pencil size={14} />
-                      Editar
-                    </button>
-                    <button
-                      onClick={() => handleEliminar(entrega.id)}
-                      className="flex items-center gap-1 text-red-600 hover:text-red-700 text-sm"
-                    >
-                      <Trash2 size={14} />
-                      Eliminar
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {entregasFiltradas.length === 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[700px] text-sm">
+            <thead className="bg-gray-100 text-left">
               <tr>
-                <td colSpan={6} className="p-6 text-center text-gray-400">
-                  No hay entregas que coincidan.
-                </td>
+                <th className="p-3 text-gray-700">Equipo</th>
+                <th className="p-3 text-gray-700">Archivo</th>
+                <th className="p-3 text-gray-700">Tipo</th>
+                <th className="p-3 text-gray-700">Subido por</th>
+                <th className="p-3 text-gray-700">Estado</th>
+                <th className="p-3 text-right text-gray-700">Acciones</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {entregasFiltradas.map((entrega) => (
+                <tr key={entrega.id} className="border-t border-gray-200">
+                  <td className="p-3 font-medium text-gray-900">{entrega.nombreEquipo}</td>
+                  <td className="p-3 text-gray-900">{entrega.nombreArchivo}</td>
+                  <td className="p-3 capitalize text-gray-700">{entrega.tipo}</td>
+                  <td className="p-3 text-gray-600">
+                    {mapaUsuarios.get(entrega.subidoPor) ?? entrega.subidoPor}
+                  </td>
+                  <td className="p-3">
+                    <span
+                      className={`text-xs px-2 py-1 rounded-none ${
+                        entrega.estado === "calificado"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-yellow-100 text-yellow-700"
+                      }`}
+                    >
+                      {entrega.estado}
+                    </span>
+                  </td>
+                  <td className="p-3 text-right">
+                    <div className="flex justify-end gap-3">
+                      <button
+                        onClick={() => setEntregaEditando(entrega)}
+                        className="flex items-center gap-1 text-gray-600 hover:text-[#D7282F] text-sm"
+                      >
+                        <Pencil size={14} />
+                        Editar
+                      </button>
+                      <button
+                        onClick={() => handleEliminar(entrega.id)}
+                        className="flex items-center gap-1 text-red-600 hover:text-red-700 text-sm"
+                      >
+                        <Trash2 size={14} />
+                        Eliminar
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {entregasFiltradas.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="p-6 text-center text-gray-400">
+                    No hay entregas que coincidan.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {entregaEditando && (
         <ModalEntrega entrega={entregaEditando} onClose={() => setEntregaEditando(null)} />
       )}
-
     </div>
   );
 }

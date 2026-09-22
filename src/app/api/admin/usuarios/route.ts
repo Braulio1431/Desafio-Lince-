@@ -2,15 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
 import { adminAuth, adminDb } from "@/lib/firebaseAdmin";
 
-const ROLES = ["admin", "maestro"] as const;
+const ROLES = ["admin", "maestro", "subadmin"] as const;
+
+async function requiereAdmin(request: NextRequest) {
+  const header = request.headers.get("authorization");
+  const token = header?.startsWith("Bearer ") ? header.slice(7) : "";
+  if (!token) return null;
+  const actual = await adminAuth.verifyIdToken(token);
+  if (actual.rol !== "admin" && actual.role !== "admin") return null;
+  return actual;
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const header = request.headers.get("authorization");
-    const token = header?.startsWith("Bearer ") ? header.slice(7) : "";
-    if (!token) return NextResponse.json({ error: "No autorizado: falta el token de sesión." }, { status: 401 });
-    const actual = await adminAuth.verifyIdToken(token);
-    if (actual.rol !== "admin" && actual.role !== "admin") return NextResponse.json({ error: "Sólo un administrador puede crear usuarios" }, { status: 403 });
+    const actual = await requiereAdmin(request);
+    if (!actual) return NextResponse.json({ error: "Sólo un administrador puede crear usuarios" }, { status: 403 });
 
     const body = await request.json() as { nombre?: string; correo?: string; password?: string; rol?: string };
     const nombre = body.nombre?.trim(); const correo = body.correo?.trim().toLowerCase(); const password = body.password; const rol = body.rol;
@@ -32,13 +38,51 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const header = request.headers.get("authorization"); const token = header?.startsWith("Bearer ") ? header.slice(7) : "";
-    const actual = token ? await adminAuth.verifyIdToken(token) : null;
-    if (!actual || (actual.rol !== "admin" && actual.role !== "admin")) return NextResponse.json({ error: "Sólo un administrador puede cambiar roles" }, { status: 403 });
-    const body = await request.json() as { uid?: string; rol?: string };
-    if (!body.uid || !ROLES.includes(body.rol as (typeof ROLES)[number])) return NextResponse.json({ error: "UID o rol inválido" }, { status: 400 });
-    await adminAuth.setCustomUserClaims(body.uid, { rol: body.rol });
-    await adminDb.collection("usuarios").doc(body.uid).set({ rol: body.rol }, { merge: true });
+    const actual = await requiereAdmin(request);
+    if (!actual) return NextResponse.json({ error: "Sólo un administrador puede editar usuarios" }, { status: 403 });
+
+    const body = await request.json() as { uid?: string; rol?: string; nombre?: string; correo?: string; password?: string };
+    if (!body.uid) return NextResponse.json({ error: "Falta el UID del usuario" }, { status: 400 });
+    if (body.rol && !ROLES.includes(body.rol as (typeof ROLES)[number])) return NextResponse.json({ error: "Rol inválido" }, { status: 400 });
+    if (body.password && body.password.length < 6) return NextResponse.json({ error: "La contraseña debe tener al menos 6 caracteres" }, { status: 400 });
+
+    const cambiosAuth: { displayName?: string; email?: string; password?: string } = {};
+    if (body.nombre?.trim()) cambiosAuth.displayName = body.nombre.trim();
+    if (body.correo?.trim()) cambiosAuth.email = body.correo.trim().toLowerCase();
+    if (body.password) cambiosAuth.password = body.password;
+    if (Object.keys(cambiosAuth).length > 0) {
+      await adminAuth.updateUser(body.uid, cambiosAuth);
+    }
+
+    if (body.rol) await adminAuth.setCustomUserClaims(body.uid, { rol: body.rol });
+
+    const cambiosFirestore: { nombre?: string; correo?: string; rol?: string } = {};
+    if (body.nombre?.trim()) cambiosFirestore.nombre = body.nombre.trim();
+    if (body.correo?.trim()) cambiosFirestore.correo = body.correo.trim().toLowerCase();
+    if (body.rol) cambiosFirestore.rol = body.rol;
+    if (Object.keys(cambiosFirestore).length > 0) {
+      await adminDb.collection("usuarios").doc(body.uid).set(cambiosFirestore, { merge: true });
+    }
+
     return NextResponse.json({ ok: true });
-  } catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : "No se pudo cambiar el rol" }, { status: 400 }); }
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "No se pudo actualizar el usuario" }, { status: 400 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const actual = await requiereAdmin(request);
+    if (!actual) return NextResponse.json({ error: "Sólo un administrador puede eliminar usuarios" }, { status: 403 });
+
+    const body = await request.json() as { uid?: string };
+    if (!body.uid) return NextResponse.json({ error: "Falta el UID del usuario" }, { status: 400 });
+
+    await adminAuth.deleteUser(body.uid);
+    await adminDb.collection("usuarios").doc(body.uid).delete();
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "No se pudo eliminar el usuario" }, { status: 400 });
+  }
 }

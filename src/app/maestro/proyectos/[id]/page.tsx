@@ -174,7 +174,7 @@ export default function EvaluarProyectoPage() {
             className="w-full min-h-28 border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 disabled:bg-gray-100"
           />
 
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <span className="font-bold text-[#202124]">
               Bloque: {puntosBloque.toFixed(2)} / {PONDERACION_RUBRICAS[documento]} puntos
             </span>

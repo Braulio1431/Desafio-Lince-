@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { escucharEquipos, eliminarEquipo, eliminarTodosLosProyectosYCalificaciones } from "@/lib/equipos";
+import { escucharEquipos, eliminarEquipo } from "@/lib/equipos";
 import { Equipo } from "@/types";
 import { ModalEquipo } from "@/components/ModalEquipo";
 import { ModalImportarEquipos } from "@/components/ModalImportarEquipos";
 import { ModalDetalleProyecto } from "@/components/ModalDetalleProyecto";
+import { useAuth } from "@/components/AuthProvider";
 import { Eye, Pencil, Plus, Trash2, Upload, FolderKanban, Search, X, CheckCircle2 } from "lucide-react";
 
 export default function EquiposAdminPage() {
@@ -14,27 +15,17 @@ export default function EquiposAdminPage() {
   const [editando, setEditando] = useState<Equipo | null>(null);
   const [viendo, setViendo] = useState<Equipo | null>(null);
   const [importar, setImportar] = useState(false);
-  const [eliminandoTodo, setEliminandoTodo] = useState(false);
-  const [mensajeEliminacion, setMensajeEliminacion] = useState("");
 
   const [busqueda, setBusqueda] = useState("");
   const [campusFiltro, setCampusFiltro] = useState("todos");
+
+  const { rol } = useAuth();
+  const esSubadmin = rol === "subadmin";
 
   useEffect(() => escucharEquipos(setEquipos), []);
 
   async function eliminar(id: string) {
     if (confirm("¿Eliminar este proyecto? Esta acción no se puede deshacer.")) await eliminarEquipo(id);
-  }
-
-  async function eliminarTodo() {
-    if (prompt("Esta accion es irreversible. Escribe ELIMINAR para continuar:") !== "ELIMINAR") return;
-    setEliminandoTodo(true); setMensajeEliminacion("");
-    try {
-      const resultado = await eliminarTodosLosProyectosYCalificaciones();
-      setMensajeEliminacion(`Se eliminaron ${resultado.proyectos} proyectos, ${resultado.entregas} entregas y ${resultado.calificaciones} calificaciones.`);
-    } catch (error) {
-      setMensajeEliminacion(error instanceof Error ? error.message : "No se pudieron eliminar los registros.");
-    } finally { setEliminandoTodo(false); }
   }
 
   const campusDisponibles = Array.from(
@@ -70,9 +61,11 @@ export default function EquiposAdminPage() {
           <p className="text-gray-500 mt-1">Gestiona equipos, datos de registro y documentos del concurso.</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
-          <button onClick={() => setImportar(true)} className="inline-flex justify-center items-center gap-2 border border-gray-300 text-gray-700 rounded-lg px-4 py-2.5 font-semibold hover:bg-gray-50 transition">
-            <Upload size={17} /> Importar tabla
-          </button>
+          {!esSubadmin && (
+            <button onClick={() => setImportar(true)} className="inline-flex justify-center items-center gap-2 border border-gray-300 text-gray-700 rounded-lg px-4 py-2.5 font-semibold hover:bg-gray-50 transition">
+              <Upload size={17} /> Importar tabla
+            </button>
+          )}
           <button onClick={() => { setEditando(null); setModal(true); }} className="inline-flex justify-center items-center gap-2 bg-[#c8102e] text-white rounded-lg px-4 py-2.5 font-semibold hover:bg-[#a50d26] transition shadow-sm">
             <Plus size={17} /> Nuevo proyecto
           </button>
@@ -97,12 +90,6 @@ export default function EquiposAdminPage() {
           </p>
         </div>
       </div>
-
-      <section className="border border-red-200 bg-red-50 p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div><h2 className="font-bold text-red-900">Borrado general de registros</h2><p className="text-sm text-red-800 mt-1">Elimina proyectos, entregas y calificaciones de Firestore. Requiere escribir ELIMINAR.</p></div>
-        <button onClick={eliminarTodo} disabled={eliminandoTodo} className="inline-flex items-center justify-center gap-2 bg-red-700 text-white px-4 py-2.5 font-semibold disabled:opacity-50"><Trash2 size={17} />{eliminandoTodo ? "Eliminando..." : "Eliminar todos los proyectos y calificaciones"}</button>
-        {mensajeEliminacion && <p className="text-sm text-red-900">{mensajeEliminacion}</p>}
-      </section>
 
       <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col md:flex-row gap-3 md:items-center">
         <div className="relative flex-1">
@@ -182,15 +169,19 @@ export default function EquiposAdminPage() {
                     </td>
                     <td className="p-4">
                       <div className="flex justify-end gap-3">
-                        <button onClick={() => { setEditando(equipo); setModal(true); }} className="inline-flex items-center gap-1 text-gray-600 hover:text-[#c8102e] transition">
-                          <Pencil size={15} /> Editar
-                        </button>
+                        {!esSubadmin && (
+                          <button onClick={() => { setEditando(equipo); setModal(true); }} className="inline-flex items-center gap-1 text-gray-600 hover:text-[#c8102e] transition">
+                            <Pencil size={15} /> Editar
+                          </button>
+                        )}
                         <button onClick={() => setViendo(equipo)} className="inline-flex items-center gap-1 text-gray-600 hover:text-[#c8102e] transition">
                           <Eye size={15} /> Ver
                         </button>
-                        <button onClick={() => eliminar(equipo.id)} className="inline-flex items-center gap-1 text-gray-600 hover:text-red-700 transition">
-                          <Trash2 size={15} /> Eliminar
-                        </button>
+                        {!esSubadmin && (
+                          <button onClick={() => eliminar(equipo.id)} className="inline-flex items-center gap-1 text-gray-600 hover:text-red-700 transition">
+                            <Trash2 size={15} /> Eliminar
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

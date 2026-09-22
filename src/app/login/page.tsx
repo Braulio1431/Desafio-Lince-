@@ -18,7 +18,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (cargando || !user) return;
-    if (rol === "admin") router.replace("/admin");
+   if (rol === "admin" || rol === "subadmin") router.replace("/admin");
     if (rol === "maestro") router.replace("/maestro/dashboard");
   }, [user, rol, cargando, router]);
 
@@ -43,7 +43,6 @@ export default function LoginPage() {
           "radial-gradient(120% 120% at 50% 0%, #d7282f 0%, #d7282f 75%, #a22327 100%)",
       }}
     >
-      {/* Marca UVM arriba */}
       <Image
         src="/logo-uvm-white.png"
         alt="UVM"
@@ -55,7 +54,7 @@ export default function LoginPage() {
 
       <form
         onSubmit={handleSubmit}
-        className="relative z-10 bg-white rounded-2xl shadow-[0_25px_70px_-20px_rgba(0,0,0,0.55)] w-full max-w-sm p-8 space-y-6"
+        className="relative z-10 bg-white rounded-2xl shadow-[0_25px_70px_-20px_rgba(0,0,0,0.55)] w-full max-w-sm p-6 sm:p-8 space-y-6"
       >
         <div className="flex justify-center">
           <Image

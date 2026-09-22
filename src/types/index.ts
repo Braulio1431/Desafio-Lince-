@@ -1,4 +1,4 @@
-export type Rol = "admin" | "maestro";
+export type Rol = "admin" | "maestro" | "subadmin";
 
 export interface Usuario {
   uid: string;
