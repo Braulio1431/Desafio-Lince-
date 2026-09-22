@@ -5,12 +5,14 @@ import { escucharEquipos, eliminarEquipo, eliminarTodosLosProyectosYCalificacion
 import { Equipo } from "@/types";
 import { ModalEquipo } from "@/components/ModalEquipo";
 import { ModalImportarEquipos } from "@/components/ModalImportarEquipos";
-import { Pencil, Plus, Trash2, Upload, FolderKanban, Search, X, CheckCircle2 } from "lucide-react";
+import { ModalDetalleProyecto } from "@/components/ModalDetalleProyecto";
+import { Eye, Pencil, Plus, Trash2, Upload, FolderKanban, Search, X, CheckCircle2 } from "lucide-react";
 
 export default function EquiposAdminPage() {
   const [equipos, setEquipos] = useState<Equipo[]>([]);
   const [modal, setModal] = useState(false);
   const [editando, setEditando] = useState<Equipo | null>(null);
+  const [viendo, setViendo] = useState<Equipo | null>(null);
   const [importar, setImportar] = useState(false);
   const [eliminandoTodo, setEliminandoTodo] = useState(false);
   const [mensajeEliminacion, setMensajeEliminacion] = useState("");
@@ -158,7 +160,7 @@ export default function EquiposAdminPage() {
                   <tr key={equipo.id} className="border-t border-gray-100 hover:bg-gray-50/80 transition-colors">
                     <td className="p-4">
                       <span className="block text-xs text-[#c8102e] font-bold tracking-wide">{equipo.codigoProyecto ?? "Sin ID"}</span>
-                      <span className="font-semibold text-gray-900">{equipo.registro?.nombreProyecto || equipo.nombreEquipo}</span>
+                      <button onClick={() => setViendo(equipo)} className="font-semibold text-gray-900 text-left hover:text-[#c8102e] hover:underline">{equipo.registro?.nombreProyecto || equipo.nombreEquipo}</button>
                     </td>
                     <td className="p-4 text-gray-700">{equipo.registro?.nombreCompleto || equipo.representante?.nombre}</td>
                     <td className="p-4 text-gray-700">{equipo.registro?.campusUvmCercano || "—"}</td>
@@ -182,6 +184,9 @@ export default function EquiposAdminPage() {
                       <div className="flex justify-end gap-3">
                         <button onClick={() => { setEditando(equipo); setModal(true); }} className="inline-flex items-center gap-1 text-gray-600 hover:text-[#c8102e] transition">
                           <Pencil size={15} /> Editar
+                        </button>
+                        <button onClick={() => setViendo(equipo)} className="inline-flex items-center gap-1 text-gray-600 hover:text-[#c8102e] transition">
+                          <Eye size={15} /> Ver
                         </button>
                         <button onClick={() => eliminar(equipo.id)} className="inline-flex items-center gap-1 text-gray-600 hover:text-red-700 transition">
                           <Trash2 size={15} /> Eliminar
@@ -207,6 +212,7 @@ export default function EquiposAdminPage() {
       </div>
 
       {modal && <ModalEquipo equipo={editando} onClose={() => setModal(false)} />}
+      {viendo && <ModalDetalleProyecto equipo={viendo} onClose={() => setViendo(null)} />}
       {importar && <ModalImportarEquipos onClose={() => setImportar(false)} />}
     </main>
   );

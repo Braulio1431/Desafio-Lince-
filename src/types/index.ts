@@ -67,6 +67,7 @@ export interface DocumentoEquipo {
   link: string;
   tipo?: "archivo" | "video";
   archivoURL?: string;
+  storagePath?: string;
   nombreArchivo?: string;
   fechaActualizacion?: string;
   actualizadoPor?: string;
